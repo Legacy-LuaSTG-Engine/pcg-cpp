@@ -741,7 +741,7 @@ template <typename UInt32>
 uint_x4<UInt32,uint64_t> operator*(const uint_x4<UInt32,uint64_t>& a,
 				   const uint_x4<UInt32,uint64_t>& b)
 {
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && (_M_AMD64 || _M_IX86)
     uint64_t hi;
     uint64_t lo = _umul128(a.d.v01, b.d.v01, &hi);
 #else
