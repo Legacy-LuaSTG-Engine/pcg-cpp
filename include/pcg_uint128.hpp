@@ -737,6 +737,8 @@ uint_x4<UInt,UIntX2> operator*(const uint_x4<UInt,UIntX2>& a,
 #pragma intrinsic(_umul128)
 #elif defined(_M_ARM64)
 #pragma intrinsic(__umulh)
+#else
+#error Unsupported architecture
 #endif
 #endif
 
@@ -752,6 +754,8 @@ uint_x4<UInt32,uint64_t> operator*(const uint_x4<UInt32,uint64_t>& a,
 #elif defined(_M_ARM64)
     uint64_t lo = a.d.v01 * b.d.v01;
     uint64_t hi = __umulh(a.d.v01, b.d.v01);
+#else
+#error Unsupported architecture
 #endif
 #else
     __uint128_t r = __uint128_t(a.d.v01) * __uint128_t(b.d.v01);
