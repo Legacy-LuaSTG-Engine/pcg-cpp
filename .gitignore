@@ -30,4 +30,14 @@
 *.out
 *.app
 
+# IDE
+/.vs
+/.vscode
+/.idea
+
+# IDE build
+/cmake-build-*
+/build
+/out
+
 # Actual Project Executables
