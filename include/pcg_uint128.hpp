@@ -733,7 +733,11 @@ uint_x4<UInt,UIntX2> operator*(const uint_x4<UInt,UIntX2>& a,
 
 #if PCG_64BIT_SPECIALIZATIONS
 #if defined(_MSC_VER)
+#if defined(_M_AMD64) || defined(_M_IX86)
 #pragma intrinsic(_umul128)
+#elif defined(_M_ARM64)
+#pragma intrinsic(__umulh)
+#endif
 #endif
 
 #if defined(_MSC_VER) || __SIZEOF_INT128__
@@ -741,9 +745,14 @@ template <typename UInt32>
 uint_x4<UInt32,uint64_t> operator*(const uint_x4<UInt32,uint64_t>& a,
 				   const uint_x4<UInt32,uint64_t>& b)
 {
-#if defined(_MSC_VER) && (_M_AMD64 || _M_IX86)
+#if defined(_MSC_VER)
+#if defined(_M_AMD64) || defined(_M_IX86)
     uint64_t hi;
     uint64_t lo = _umul128(a.d.v01, b.d.v01, &hi);
+#elif defined(_M_ARM64)
+    uint64_t lo = a.d.v01 * b.d.v01;
+    uint64_t hi = __umulh(a.d.v01, b.d.v01);
+#endif
 #else
     __uint128_t r = __uint128_t(a.d.v01) * __uint128_t(b.d.v01);
     uint64_t lo = uint64_t(r);
