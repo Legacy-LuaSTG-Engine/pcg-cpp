@@ -30,6 +30,7 @@
 #include <cassert>
 #include <climits>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <algorithm>
 #include <numeric>
@@ -53,24 +54,8 @@ using pcg_extras::operator<<;
 
 #if !PCG_EMULATED_128BIT_MATH || !AWKWARD_128BIT_CODE
 
-int main(int argc, char** argv)
+int main_test(std::ostream& out, int rounds, bool nondeterministic_seed)
 {
-    // Read command-line options
-
-    int rounds = 5;
-    bool nondeterministic_seed = false;
-
-    ++argv;
-    --argc;
-    if (argc > 0 && strcmp(argv[0], "-r") == 0) {
-        nondeterministic_seed = true;
-        ++argv;
-        --argc;
-    }
-    if (argc > 0) {
-        rounds = atoi(argv[0]);
-    }
-
     /* Many of the generators can be initialized with two arguments; the second
      * one specifies the stream.
      */
@@ -95,52 +80,52 @@ int main(int argc, char** argv)
                                 : bits >  32 ? 3
                                 :              how_many_nums;
 
-    cout << STRINGIFY(RNG) << ":\n"
-    //   << "      -  aka:         " << pcg_extras::printable_typename<RNG>()
+    out << STRINGIFY(RNG) << ":\n"
+    //  << "      -  aka:         " << pcg_extras::printable_typename<RNG>()
     // ^-- we skip this line because the output is long, scary, ugly, and
     //     and varies depending on the platform
-         << "      -  result:      " <<  bits << "-bit unsigned int\n"
-         << "      -  period:      2^" << RNG::period_pow2();
+        << "      -  result:      " <<  bits << "-bit unsigned int\n"
+        << "      -  period:      2^" << RNG::period_pow2();
     if (RNG::streams_pow2() > 0)
-         cout << "   (* 2^" << RNG::streams_pow2() << " streams)";
-    cout << "\n      -  size:        " << sizeof(RNG) << " bytes\n\n";
+        out << "   (* 2^" << RNG::streams_pow2() << " streams)";
+    out << "\n      -  size:        " << sizeof(RNG) << " bytes\n\n";
 
     for (int round = 1; round <= rounds; ++round) {
-        printf("Round %d:\n", round);
+        out << "Round " << round << ":\n";
 
         /* Make some N-bit numbers */
-        cout << setw(4) << setfill(' ') << bits << "bit:";
+        out << setw(4) << setfill(' ') << bits << "bit:";
         for (int i = 0; i < how_many_nums; ++i) {
             if (i > 0 && i % wrap_nums_at == 0)
-                cout << "\n\t";
-            cout << " 0x" << hex << setfill('0') 
-                 << setw(sizeof(RNG::result_type)*2) << rng();
+                out << "\n\t";
+            out << " 0x" << hex << setfill('0') 
+                << setw(sizeof(RNG::result_type)*2) << rng();
         }
-        cout << endl;
+        out << endl;
 
-        cout << "  Again:";
+        out << "  Again:";
         rng.backstep(6);
         for (int i = 0; i < how_many_nums; ++i) {
             if (i > 0 && i % wrap_nums_at == 0)
-                cout << "\n\t";
-            cout << " 0x" << hex << setfill('0') 
-                 << setw(sizeof(RNG::result_type)*2) << rng();
+                out << "\n\t";
+            out << " 0x" << hex << setfill('0') 
+                << setw(sizeof(RNG::result_type)*2) << rng();
         }
-        cout << dec << endl;
+        out << dec << endl;
 
         /* Toss some coins */
-        cout << "  Coins: ";
+        out << "  Coins: ";
         for (int i = 0; i < 65; ++i)
-            cout << (rng(2) ? "H" : "T");
-        cout << endl;
+            out << (rng(2) ? "H" : "T");
+        out << endl;
 
         RNG rng_copy{rng};
         /* Roll some dice */
-        printf("  Rolls:");
+        out << "  Rolls:";
         for (int i = 0; i < 33; ++i)
-            cout << " " << (uint32_t(rng(6)) + 1);
-        cout << "\n   -->   rolling dice used " 
-             << (rng - rng_copy) << " random numbers" << endl;
+            out << " " << (uint32_t(rng(6)) + 1);
+        out << "\n   -->   rolling dice used " 
+            << (rng - rng_copy) << " random numbers" << endl;
 
         /* Deal some cards using pcg_extras::shuffle, which follows
          * the algorithm for shuffling that most programmers would expect.
@@ -152,22 +137,55 @@ int main(int argc, char** argv)
         pcg_extras::shuffle(begin(cards), end(cards), rng);
 
         /* Output the shuffled deck */
-        printf("  Cards:");
+        out << "  Cards:";
         static const signed char number[] = {'A', '2', '3', '4', '5', '6', '7',
                                              '8', '9', 'T', 'J', 'Q', 'K'};
         static const signed char suit[] =   {'h', 'c', 'd', 's'};
         int i = 0;
         for (auto card : cards) {
             ++i;
-            cout << " " << number[card / SUITS] << suit[card % SUITS];
+            out << " " << number[card / SUITS] << suit[card % SUITS];
             if (i % 22 == 0)
-                cout << "\n\t";
+                out << "\n\t";
         }
         
-        cout << "\n" << endl;
+        out << "\n" << endl;
     }
 
     return 0;
+}
+
+int main(int argc, char** argv)
+{
+    // Read command-line options
+    int rounds = 5;
+    bool nondeterministic_seed = false;
+    std::ofstream out_file;
+
+    ++argv;
+    --argc;
+    if (argc > 0 && strcmp(argv[0], "-r") == 0) {
+        nondeterministic_seed = true;
+        ++argv;
+        --argc;
+    }
+    if (argc > 0 && strcmp(argv[0], "-o") == 0) {
+        ++argv;
+        --argc;
+        if (argc > 0) {
+            out_file.open(argv[0], std::ios::out | std::ios::trunc);
+            ++argv;
+            --argc;
+        }
+    }
+    if (argc > 0) {
+        rounds = atoi(argv[0]);
+    }
+
+    if (out_file.is_open()) {
+        return main_test(out_file, rounds, nondeterministic_seed);
+    }
+    return main_test(std::cout, rounds, nondeterministic_seed);
 }
 
 #else //  i.e. PCG_EMULATED_128BIT_MATH && AWKWARD_128BIT_CODE
