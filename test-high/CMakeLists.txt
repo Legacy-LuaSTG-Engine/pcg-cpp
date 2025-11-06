@@ -46,6 +46,24 @@ set(pcg_cpp_tests_link_test_noadvance
     check-pcg64_unique
 )
 
+set(pcg_cpp_tests_no_expected_out
+    check-pcg32_unique
+    check-pcg64_unique
+)
+
+set(pcg_cpp_tests_no_int128
+    check-pcg64_k1024
+    check-pcg64_k1024_fast
+    check-pcg64_k32
+    check-pcg64_k32_fast
+    check-pcg64_k32_oneseq
+    check-pcg64_c1024
+    check-pcg64_c1024_fast
+    check-pcg64_c32
+    check-pcg64_c32_fast
+    check-pcg64_c32_oneseq
+)
+
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/actual")
 
 foreach(test_name IN LISTS pcg_cpp_tests_link_test pcg_cpp_tests_link_test_noadvance)
@@ -62,7 +80,10 @@ foreach(test_name IN LISTS pcg_cpp_tests_link_test pcg_cpp_tests_link_test_noadv
         COMMAND "$<TARGET_FILE:${test_name}>" -o "${actual}"
     )
 
-    if (${test_name} STREQUAL "check-pcg32_unique" OR ${test_name} STREQUAL "check-pcg64_unique")
+    if (${test_name} IN_LIST pcg_cpp_tests_no_expected_out)
+        continue()
+    endif ()
+    if ((CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") AND (${test_name} IN_LIST pcg_cpp_tests_no_int128))
         continue()
     endif ()
     add_test(
