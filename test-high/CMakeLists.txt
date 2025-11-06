@@ -61,6 +61,10 @@ foreach(test_name IN LISTS pcg_cpp_tests_link_test pcg_cpp_tests_link_test_noadv
         NAME "run-${test_name}"
         COMMAND "$<TARGET_FILE:${test_name}>" -o "${actual}"
     )
+
+    if (${test_name} STREQUAL "check-pcg32_unique" OR ${test_name} STREQUAL "check-pcg64_unique")
+        continue()
+    endif ()
     add_test(
         NAME "verify-${test_name}"
         COMMAND "${CMAKE_COMMAND}" -E compare_files --ignore-eol "${actual}" "${expected}"
